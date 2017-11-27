@@ -1,10 +1,12 @@
 import mongoose from 'mongoose';
 import Event from './event';
+import User from './user';
 let Schema = mongoose.Schema;
 
 let AttendSchema = new Schema({
-	username: {
-		type: String,
+	user: {
+		type: Schema.Types.ObjectId,
+		ref: 'User',
 		required: true
 	},
 	event: {
@@ -12,6 +14,6 @@ let AttendSchema = new Schema({
 		ref: 'Event',
 		required: true
 	}
-});
+},{timestamps: true});
 
 module.exports = mongoose.model('Attend', AttendSchema);

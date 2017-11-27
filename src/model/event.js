@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import Attend from './attend';
+import User from './user';
+
 let Schema = mongoose.Schema;
 
 let eventSchema = new Schema({
@@ -19,13 +21,22 @@ let eventSchema = new Schema({
 		type: String,
 		required: true
 	},
-	datetime: {
-		type: String,
+	starttime: {
+		type: Date,
+		required: true
+	},
+	endtime: {
+		type: Date,
 		required: true
 	},
 	image: {
 		type: String
+	},
+	owner: {
+		type: Schema.Types.ObjectId,
+		ref: 'User',
+		required: true
 	}
-});
+},{timestamps: true});
 
 module.exports = mongoose.model('Event', eventSchema);

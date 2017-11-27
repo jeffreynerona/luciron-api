@@ -9,20 +9,28 @@ export default({ config, db }) => {
 	let api = Router();
 
 	// 'v1/event/add'
-	api.post('/add', authenticate, (req, res) => {
+	api.post('/add', authenticate, (req, res, next) => {
 		let newEvent = new Event();
 		newEvent.name = req.body.name;
 		newEvent.description = req.body.description;
 		newEvent.category = req.body.category;
 		newEvent.location = req.body.location;
-		newEvent.datetime = req.body.datetime;
+		newEvent.starttime = new Date(req.body.starttime);
+		newEvent.endtime = new Date(req.body.endtime);
 		newEvent.image = req.body.image;
-
+		newEvent.owner = req.user.id;
 		newEvent.save(err => {
 			if (err) {
-				res.send(err);
+				res.status(422).json({
+					success: false,
+					message: err.message
+				});
+			} else {
+				res.status(200).json({
+					success: true,
+					message: 'Event saved successfully'
+				});
 			}
-			res.json({ message: 'Event saved successfully' });
 		});
 	});
 
@@ -30,9 +38,13 @@ export default({ config, db }) => {
 	api.get('/', (req,res) => {
 		Event.find({}, (err, events) => {
 			if (err) {
-				res.send(err);
+				res.status(422).json({
+					success: false,
+					message: err.message
+				});
+			} else {
+				res.status(200).json(events);
 			}
-			res.json(events);
 		});
 	});
 
@@ -40,9 +52,13 @@ export default({ config, db }) => {
 	api.get('/:id', (req, res) => {
 		Event.findById(req.params.id, (err, event) => {
 			if (err) {
-				res.send(err);
+				res.status(422).json({
+					success: false,
+					message: err.message
+				});
+			} else {
+				res.status(200).json(event);
 			}
-			res.json(event);
 		});
 	});
 
@@ -50,46 +66,116 @@ export default({ config, db }) => {
 	api.put('/:id', authenticate, (req,res) => {
 		Event.findById(req.params.id, (err, event) => {
 			if (err) {
-				res.send(err);
-			}
-			event.name = req.body.name;
-			event.save(err => {
-				if (err) {
-					res.send(err);
+				res.status(422).json({
+					success: false,
+					message: err.message
+				});
+			} else if (!event){
+					return res.status(404).json({
+						success: false,
+						error: 'Not Found.'
+					});
+			} else {
+					if (req.user.id == event.owner) {
+					event.name = req.body.name;
+					event.description = req.body.description;
+					event.category = req.body.category;
+					event.location = req.body.location;
+					event.starttime = new Date(req.body.starttime);
+					event.endtime = new Date(req.body.endtime);
+					event.image = req.body.image;
+					event.save(err => {
+						if (err) {
+							res.status(422).json({
+								success: false,
+								message: err.message
+							});
+						} else {
+							res.status(200).json({
+								success: true,
+								message: "Event info updated"
+							});
+						}
+					});
+				} else {
+					return res.status(401).json({
+						success: false,
+						error: 'Not Authorized.'
+					});
 				}
-				res.json({ message: "Event info updated" });
-			});
+			}
 		});
 	});
 
 	// '/v1/event/:id' - delete
 	api.delete("/:id", authenticate, (req, res) => {
-		Event.remove({
-			_id: req.params.id
-		},(err, event) => {
+		Event.findById(req.params.id, (err, event) => {
 			if (err) {
-				res.send(err);
+				res.status(422).json({
+					success: false,
+					message: err.message
+				});
+			} else if (!event){
+					return res.status(404).json({
+						success: false,
+						error: 'Not Found.'
+					});
+			} else {
+					if (req.user.id == event.owner) {
+					event.name = req.body.name;
+					event.remove(err => {
+						if (err) {
+							res.status(422).json({
+								success: false,
+								message: err.message
+							});
+						} else {
+							res.status(200).json({
+								success: true,
+								message: "Event deleted"
+							});
+						}
+					});
+				} else {
+					return res.status(401).json({
+						success: false,
+						error: 'Not Authorized.'
+					});
+				}
 			}
-			res.json({ message: "Event Deleted"});
 		});
 	});
 
-	// '/v1/event/:id/add' attend
+	// '/v1/event/add/:id attend
 	api.post('/add/:id', authenticate, (req,res) => {
 		Event.findById(req.params.id, (err, event) => {
 			if (err) {
-				res.send(err);
-			}
-			let newAttend = new Attend();
+				res.status(422).json({
+					success: false,
+					message: err.message
+				});
+			} else if (!event){
+					return res.status(404).json({
+						success: false,
+						error: 'Not Found.'
+					});
+			} else {
+				let newAttend = new Attend();
 
-			newAttend.username = req.body.username;
-			newAttend.event = event._id;
-			newAttend.save((err, event) => {
-				if (err) {
-					res.send(err);
-				}
-				res.json({ message: 'Attendee Saved!' });
-			});
+				newAttend.user = req.user.id;
+				newAttend.event = event._id;
+				newAttend.save((err, event) => {
+					if (err) {
+						res.status(422).json({
+							success: false,
+							message: err.message
+						});
+					}
+					res.status(200).json({
+						message: 'Attendee Saved!'
+					});
+				});
+			}
 		});
 	});
 

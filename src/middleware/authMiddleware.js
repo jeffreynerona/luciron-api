@@ -12,7 +12,7 @@ let generateAccessToken = (req, res, next) => {
 	req.token = jwt.sign({
 		id: req.user.id,
 	}, SECRET, {
-		expiresIn: TOKENTIME
+
 	});
 	next();
 }
@@ -26,6 +26,7 @@ let ownerAuth = function (eventId) {
 				return next(err);
 			}
 			if (foundEvent.userId == user._id) {
+				res.locals.uid = user._id;
 				return next();
 			}
 			return res.status(401).json({ error: 'Not Authorized.' });
